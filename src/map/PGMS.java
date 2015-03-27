@@ -38,7 +38,7 @@ Boston, MA 02111-1307, USA.
  */ 
 public class PGMS extends Applet {
   // The default strategy
-  private static String default_strategy_name = "sp.SinglePointStrategy";
+  private static String default_strategy_name = "sweeper.SweeperAlgo";
   Strategy s;			// The selected strategy
   int mines = 10;		// Beginner game
   int rows = 8;
