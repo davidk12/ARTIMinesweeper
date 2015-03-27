@@ -25,6 +25,12 @@ public class SweeperAlgo implements Strategy
         random = new Random();
     }
 
+    /**
+     * This function is called by the minesweeper(PGMS) class and
+     * and calls all the logic for sweeping the board.
+     *
+     * @param m Stores all the information needed to interact with the map
+     */
     @Override
     public void play(Map m)
     {
@@ -63,6 +69,15 @@ public class SweeperAlgo implements Strategy
         }
     }
 
+    /**
+     * Probes all nodes that are stored in the safeFrontier and adds the
+     * probed node to an appropriate frontier.
+     * If a node has value of 0 then all adjacent nodes are added to the safeFrontier
+     * If a node has a value greater then 0 the it is added to checkFrontier
+     *
+     * @param m Stores all the information needed to interact with the map
+     * @throws BombException if a bomb is probed.
+     */
     public void probeSafeFrontier(Map m) throws BombException
     {
         while (!safeFrontier.isEmpty())
@@ -83,6 +98,15 @@ public class SweeperAlgo implements Strategy
         }
     }
 
+    /**
+     * If the first node probed does not contain a value of 0, then
+     * we probe a new node until we find one with a value of 0.
+     * If a node has value of 0 then all adjacent nodes are added to the safeFrontier.
+     * If a node has a value greater then 0 the it is added to checkFrontier.
+     *
+     * @param m Stores all the information needed to interact with the map.
+     * @throws BombException if a bomb is probed.
+     */
     private void checkForBetterStartingPos(Map m) throws BombException
     {
         Point p = makeRandomProbe(m);
@@ -105,6 +129,12 @@ public class SweeperAlgo implements Strategy
             addAllAdjacentToSafeFrontier(p, m);
     }
 
+    /**
+     * Handles adding all nodes adjacent to a given point to the safeFrontier.
+     *
+     * @param p Stores all the information needed for a single point in the map
+     * @param m Stores all the information needed to interact with the map
+     */
     private void addAllAdjacentToSafeFrontier(Point p, Map m)
     {
         for (int i = 0; i < 8; i++)
@@ -173,6 +203,14 @@ public class SweeperAlgo implements Strategy
         }
     }
 
+    /**
+     * Checks if a certain coordinate is out of bounds.
+     *
+     * @param x coordinate in the map.
+     * @param y coordinate in the map.
+     * @param m Stores all the information needed to interact with the map.
+     * @return true if the coordinate is out of bounds, else false.
+     */
     private boolean checkOutOfBounds(int x, int y, Map m)
     {
         if (x < 0 || x >= m.rows())
@@ -183,11 +221,24 @@ public class SweeperAlgo implements Strategy
         return false;
     }
 
+    /**
+     * Checks if a certain node in the map has been probed or not.
+     *
+     * @param x coordinate in the map
+     * @param y coordinate in the map
+     * @return true if the node has been probed, else false.
+     */
     private boolean hasBeenProbed(int x, int y)
     {
         return probed[x][y];
     }
 
+    /**
+     * Finds a random node in the map that has not been probed.
+     *
+     * @param m Stores all the information needed to interact with the map.
+     * @return a point that has not been probed
+     */
     private Point makeRandomProbe(Map m)
     {
         int x;
@@ -201,15 +252,21 @@ public class SweeperAlgo implements Strategy
         return new Point(x, y);
     }
 
-    private Point pokeRandomAdjacent(Map m)
+    /**
+     * Finds a random node adjacent to a given point that has not been probed.
+     *
+     * @param x coordinate in the map.
+     * @param y coordinate in the map.
+     * @param m Stores all the information needed to interact with the map.
+     * @return a random point adjacent to a given point that has not been probed.
+     */
+    private Point pokeRandomAdjacent(int x, int y, Map m)
     {
-        int x;
-        int y;
         do
         {
             // random from - 1 to 1
-            x = random.nextInt(3) - 1;
-            y = random.nextInt(3) - 1;
+            x += random.nextInt(3) - 1;
+            y += random.nextInt(3) - 1;
         } while (hasBeenProbed(x, y) || checkOutOfBounds(x, y, m));
 
         return new Point(x, y);
