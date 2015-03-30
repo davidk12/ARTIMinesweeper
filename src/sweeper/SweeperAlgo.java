@@ -3,6 +3,8 @@ package sweeper;
 import map.Map;
 import map.Strategy;
 
+import javax.sound.midi.SysexMessage;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -71,11 +73,15 @@ public class SweeperAlgo implements Strategy
                 addAllAdjacentToSafeFrontier(p, m);
 
 
-            while (madeChanges)
+            while (!checkForWin(m))
             {
                 madeChanges = false;
                 probeSafeFrontier(m);
                 findSafeBombs(m);
+
+                if (!madeChanges)
+                    calculateOptimalNode(m);
+
 
             }
         }
@@ -96,6 +102,20 @@ public class SweeperAlgo implements Strategy
         System.out.println("Size: " + m.rows() + " * " +  m.columns());
         System.out.println("Number of bombs: " + m.mines_minus_marks());
         System.out.println();
+    }
+
+    private boolean checkForWin(Map m)
+    {
+        for (int i = 0; i < m.rows(); i++)
+        {
+            for (int j = 0; j < m.columns(); j++)
+            {
+                if (!probed[i][j])
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -389,6 +409,181 @@ public class SweeperAlgo implements Strategy
                 }
             }
         }
+    }
+
+    private void calculateOptimalNode(Map m)
+    {
+        System.out.println("Calculating optimal node to probe.\n");
+
+        LinkedList<Point> nodeList = new LinkedList<Point>();
+        LinkedList<Point> legitBombArrangement = new LinkedList<Point>();
+
+
+        for (int i = 0; i < checkFrontier.size(); i++)
+        {
+            Point tmpNode = checkFrontier.get(i);
+            int knownAdjacentBombs = countKnownBombsAroundPoint(m, tmpNode);
+            nodeList.add(new Point(tmpNode.x, tmpNode.y, tmpNode.value - knownAdjacentBombs));
+        }
+
+        for (int j = 0; j < checkFrontier.size() * 2; j++)
+        {
+            LinkedList<Point> calcList = new LinkedList<Point>(nodeList);
+            LinkedList<Point> bombChanceCount = new LinkedList<Point>();
+
+            /*
+            for (int k = 0; k < j; k++)
+            {
+                Point tmp = calcList.getFirst();
+                calcList.remove(0);
+                calcList.add(tmp);
+            }
+            */
+
+            Collections.shuffle(calcList);
+
+            for (Point calcNode: calcList)
+            {
+                for (int i = -1; i < 2; i++)
+                {
+                    if (i == 0)
+                        continue;
+
+                    if (legalToProbe(calcNode.x + i, calcNode.y + i, m))
+                    {
+                        Point tmp = Point.findPointInLinkedList(bombChanceCount, calcNode.x + i, calcNode.y + i);
+                        if (tmp == null)
+                        {
+                            tmp = new Point(calcNode.x + i, calcNode.y + i, 0);
+                            bombChanceCount.add(tmp);
+                        }
+
+                        if (calcNode.value > 0)
+                        {
+                            calcNode.value -= 1;
+                            tmp.value += 1;
+                        }
+                    }
+                    if (legalToProbe(calcNode.x + i, calcNode.y, m))
+                    {
+                        Point tmp = Point.findPointInLinkedList(bombChanceCount, calcNode.x + i, calcNode.y);
+                        if (tmp == null)
+                        {
+                            tmp = new Point(calcNode.x + i, calcNode.y, 0);
+                            bombChanceCount.add(tmp);
+                        }
+
+                        if (calcNode.value > 0)
+                        {
+                            calcNode.value -= 1;
+                            tmp.value += 1;
+                        }
+                    }
+                    if (legalToProbe(calcNode.x, calcNode.y + i, m))
+                    {
+                        Point tmp = Point.findPointInLinkedList(bombChanceCount, calcNode.x, calcNode.y + i);
+                        if (tmp == null)
+                        {
+                            tmp = new Point(calcNode.x, calcNode.y + i, 0);
+                            bombChanceCount.add(tmp);
+                        }
+
+                        if (calcNode.value > 0)
+                        {
+                            calcNode.value -= 1;
+                            tmp.value += 1;
+                        }
+                    }
+                }
+                if (legalToProbe(calcNode.x - 1, calcNode.y + 1, m))
+                {
+                    Point tmp = Point.findPointInLinkedList(bombChanceCount, calcNode.x - 1, calcNode.y + 1);
+                    if (tmp == null)
+                    {
+                        tmp = new Point(calcNode.x - 1, calcNode.y + 1, 0);
+                        bombChanceCount.add(tmp);
+                    }
+
+                    if (calcNode.value > 0)
+                    {
+                        calcNode.value -= 1;
+                        tmp.value += 1;
+                    }
+                }
+                if (legalToProbe(calcNode.x + 1, calcNode.y - 1, m))
+                {
+                    Point tmp = Point.findPointInLinkedList(bombChanceCount, calcNode.x + 1, calcNode.y - 1);
+                    if (tmp == null)
+                    {
+                        tmp = new Point(calcNode.x + 1, calcNode.y - 1, 0);
+                        bombChanceCount.add(tmp);
+                    }
+
+                    if (calcNode.value > 0)
+                    {
+                        calcNode.value -= 1;
+                        tmp.value += 1;
+                    }
+                }
+            }
+
+            boolean allZero = true;
+
+            for (Point calcNode: calcList)
+            {
+                if (calcNode.value != 0)
+                {
+                    allZero = false;
+                    break;
+                }
+            }
+
+            if (allZero)
+            {
+                for (Point bombNode: bombChanceCount)
+                {
+                    Point tmp = Point.findPointInLinkedList(legitBombArrangement, bombNode.x, bombNode.y);
+                    if (tmp == null)
+                    {
+                        legitBombArrangement.add(bombNode);
+                    }
+                    else
+                    {
+                        tmp.value += bombNode.value;
+                    }
+                }
+
+            }
+        }
+
+        int lowestBombCount = 100;
+        Point bestNode = new Point(0, 0, 0);
+
+        for (Point legitNode: legitBombArrangement)
+        {
+            if (legitNode.value < lowestBombCount)
+            {
+                bestNode = legitNode;
+                lowestBombCount = legitNode.value;
+            }
+        }
+
+        safeFrontier.add(bestNode);
+        System.out.println("Chose " + bestNode.toString() +  " as best node.");
+
+        System.out.print("Chance List: ");
+
+        for (Point p: legitBombArrangement)
+        {
+            System.out.print(p.toString() + ":" + p.value + " - ");
+        }
+
+        System.out.println();
+    }
+
+    private boolean legalToProbe(int x, int y, Map m)
+    {
+        return !checkOutOfBounds(x, y, m) && !hasBeenProbed(x, y);
     }
 
     /**
