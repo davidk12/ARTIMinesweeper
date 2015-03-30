@@ -84,6 +84,12 @@ public class SweeperAlgo implements Strategy
             System.out.println(e.getMessage());
         }
     }
+
+    /**
+     * A function used for debugging. Has no effect on any logic.
+     * *
+     * @param m Stores all the information needed to interact with the map.
+     */
     private void gameInfo(Map m)
     {
         System.out.println("Game info");
@@ -95,10 +101,10 @@ public class SweeperAlgo implements Strategy
     /**
      * Probes all nodes that are stored in the safeFrontier and adds the
      * probed node to an appropriate frontier.
-     * If a node has value of 0 then all adjacent nodes are added to the safeFrontier
-     * If a node has a value greater then 0 the it is added to checkFrontier
+     * If a node has value of 0 then all adjacent nodes are added to the safeFrontier.
+     * If a node has a value greater then 0 the it is added to checkFrontier.
      *
-     * @param m Stores all the information needed to interact with the map
+     * @param m Stores all the information needed to interact with the map.
      * @throws BombException if a bomb is probed.
      */
     public void probeSafeFrontier(Map m) throws BombException
@@ -174,6 +180,11 @@ public class SweeperAlgo implements Strategy
         }
     }
 
+    /**
+     * Adds all points adjacent to p to a list and they will not be randomly probed.
+     *
+     * @param p a point that is adjacent to a bomb.
+     */
     private void addNodesToExcludeList(Point p)
     {
         for (int i = -1; i < 2; i++)
@@ -190,16 +201,37 @@ public class SweeperAlgo implements Strategy
         excludeList.add(new Point(p.x + 1, p.y - 1));
     }
 
+    /**
+     * Looks at a node that is touching one or more bombs. Using the number of of unprobed nodes adjacent to
+     * that node and the number of marked bombs adjacent to that node, it can determine if the unprobed nodes
+     * are 100% safe to probe or not.
+     *
+     * @param m Stores all the information needed to interact with the map.
+     */
     private void findSafeBombs(Map m)
     {
         LinkedList<Point> possibleBomb = new LinkedList<Point>();
 
 
-
         for (int y = 0; y < checkFrontier.size(); y++)
         {
-            if (findSafeNodesAroundBombs(m, checkFrontier.get(y)))
+            Point checkNode = checkFrontier.get(y);
+
+            int bombsFound = countKnownBombsAroundPoint(m, checkNode);
+
+            // if true an object gets removed from check frontier so we need to
+            // subtract 1 from y so we don't skip an object when we continue.
+            if (checkNode.value == bombsFound)
+            {
+                addAllAdjacentToSafeFrontier(checkNode, m);
+                removeFromCheckFrontier(checkNode);
+
+                // Temp stuff
+                madeChanges = true;
+
+                y--;
                 continue;
+            }
 
             int numberOfAdjacentBombs = checkFrontier.get(y).value;
 
@@ -208,30 +240,32 @@ public class SweeperAlgo implements Strategy
                 if (i == 0)
                     continue;
 
-                if (!checkOutOfBounds(checkFrontier.get(y).x + i, checkFrontier.get(y).y + i, m)
-                        && !hasBeenProbed(checkFrontier.get(y).x + i, checkFrontier.get(y).y + i))
-                    possibleBomb.add(new Point(checkFrontier.get(y).x + i, checkFrontier.get(y).y + i));
+                if (!checkOutOfBounds(checkNode.x + i, checkNode.y + i, m)
+                        && !hasBeenProbed(checkNode.x + i, checkNode.y + i))
+                    possibleBomb.add(new Point(checkNode.x + i, checkNode.y + i));
 
-                if (!checkOutOfBounds(checkFrontier.get(y).x + i, checkFrontier.get(y).y, m)
-                        && !hasBeenProbed(checkFrontier.get(y).x + i, checkFrontier.get(y).y))
-                    possibleBomb.add(new Point(checkFrontier.get(y).x + i, checkFrontier.get(y).y));
+                if (!checkOutOfBounds(checkNode.x + i, checkNode.y, m)
+                        && !hasBeenProbed(checkNode.x + i, checkNode.y))
+                    possibleBomb.add(new Point(checkNode.x + i, checkNode.y));
 
-                if (!checkOutOfBounds(checkFrontier.get(y).x, checkFrontier.get(y).y + i, m)
-                        && !hasBeenProbed(checkFrontier.get(y).x, checkFrontier.get(y).y + i))
-                    possibleBomb.add(new Point(checkFrontier.get(y).x, checkFrontier.get(y).y + i));
+                if (!checkOutOfBounds(checkNode.x, checkNode.y + i, m)
+                        && !hasBeenProbed(checkNode.x, checkNode.y + i))
+                    possibleBomb.add(new Point(checkNode.x, checkNode.y + i));
             }
 
-            if (!checkOutOfBounds(checkFrontier.get(y).x - 1, checkFrontier.get(y).y + 1, m)
-                    && !hasBeenProbed(checkFrontier.get(y).x - 1, checkFrontier.get(y).y + 1))
-                possibleBomb.add(new Point(checkFrontier.get(y).x - 1, checkFrontier.get(y).y + 1));
+            if (!checkOutOfBounds(checkNode.x - 1, checkNode.y + 1, m)
+                    && !hasBeenProbed(checkNode.x - 1, checkNode.y + 1))
+                possibleBomb.add(new Point(checkNode.x - 1, checkNode.y + 1));
 
-            if (!checkOutOfBounds(checkFrontier.get(y).x + 1, checkFrontier.get(y).y - 1, m)
-                    &&!hasBeenProbed(checkFrontier.get(y).x + 1, checkFrontier.get(y).y - 1))
-                possibleBomb.add(new Point(checkFrontier.get(y).x + 1, checkFrontier.get(y).y - 1));
+            if (!checkOutOfBounds(checkNode.x + 1, checkNode.y - 1, m)
+                    &&!hasBeenProbed(checkNode.x + 1, checkNode.y - 1))
+                possibleBomb.add(new Point(checkNode.x + 1, checkNode.y - 1));
 
-            if (numberOfAdjacentBombs == possibleBomb.size())
+
+
+            if (possibleBomb.size() == numberOfAdjacentBombs - bombsFound)
             {
-                System.out.println(checkFrontier.get(y).toString() + " marked bomb/s");
+                System.out.print("Bomb at coords " + checkNode.toString() + " marked bomb/s: ");
                 for (Point markBomb: possibleBomb)
                 {
                     probed[markBomb.x][markBomb.y] = true;
@@ -243,6 +277,7 @@ public class SweeperAlgo implements Strategy
                     removeFromCheckFrontier(markBomb);
                 }
 
+                System.out.println();
                 // Temp stuff
                 madeChanges = true;
             }
@@ -251,8 +286,14 @@ public class SweeperAlgo implements Strategy
         }
     }
 
-    // TODO: Add adjacent bombs to bombcount
-    private boolean findSafeNodesAroundBombs(Map m, Point p)
+    /**
+     * Counts the number of that have been marked around point p.
+     *
+     * @param m Stores all the information needed to interact with the map.
+     * @param p A point that will be searched around.
+     * @return the number of known bombs around point p.
+     */
+    private int countKnownBombsAroundPoint(Map m, Point p)
     {
         int bombCount = 0;
 
@@ -273,18 +314,7 @@ public class SweeperAlgo implements Strategy
         if (!checkOutOfBounds(p.x + 1, p.y - 1, m) && bombArr[p.x + 1][p.y - 1])
             bombCount++;
 
-        if (p.value == bombCount)
-        {
-            addAllAdjacentToSafeFrontier(p, m);
-            removeFromCheckFrontier(p);
-
-            // Temp stuff
-            madeChanges = true;
-
-            return true;
-        }
-
-        return false;
+        return bombCount;
     }
 
     /**
@@ -441,6 +471,12 @@ public class SweeperAlgo implements Strategy
         return new Point(x, y);
     }
 
+    /**
+     * Removes the point p from the list checkFrontier.
+     *
+     * @param p is a point that will be removed from the checkFrontier list.
+     * @return true if the point p was found and removed.
+     */
     private boolean removeFromCheckFrontier(Point p)
     {
         for (int i = 0; i < checkFrontier.size(); i++)
