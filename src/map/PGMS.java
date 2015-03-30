@@ -67,153 +67,64 @@ public class PGMS extends Applet
      */
     public static void main(String args[])
     {
+        /*
+        Beginner        9*9     10 Bombs
+        Intermediate    16*16   40 Bombs
+        Expert          16*30   99 Bombs
+         */
+
         String strategy_name = default_strategy_name;
-        String game_name = "beginner";
         int mines = 10;        // Beginner game
-        int rows = 8;
-        int columns = 8;
-        int tries = 1;
+        int rows = 9;
+        int columns = 9;
+        int tries = 100;
         int wins = 0;
         int probed = 0;
-
-        for (int i = 0; i < args.length; i++) // Process args
-        {
-            if (args[i].equals("-i"))
-            {
-                game_name = "intermediate";
-                mines = 40;            // Intermediate game
-                rows = 13;
-                columns = 15;
-            }
-            else if (args[i].equals("-e"))
-            {
-                game_name = "expert";
-                mines = 99;            // Expert game
-                rows = 16;
-                columns = 30;
-            }
-            else if (args[i].equals("-b"))
-            {
-                game_name = "beginner";
-                mines = 10;            // Beginner game
-                rows = 8;
-                columns = 8;
-            }
-            else if (args[i].equals("-s"))
-            {
-                if (++i >= args.length)
-                { // User supplied strategy
-                    usage();
-                    return;
-                }
-                else
-                    strategy_name = args[i];
-            }
-            else if (args[i].equals("-n"))
-            {
-                if (++i >= args.length)
-                { // Game count supplied
-                    usage();
-                    return;
-                }
-                else
-                    try
-                    {
-                        tries = Math.max(1, Integer.parseInt(args[i]));
-                    }
-                    catch (NumberFormatException e)
-                    {
-                        System.out.println("Bad number of games");
-                        usage();
-                        return;
-                    }
-            }
-            else
-            {
-                usage();
-                return;
-            }
-        }
 
         Strategy s;
         try
         {
             s = (Strategy) Class.forName(strategy_name).newInstance();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             System.out.println("Cannot create strategy " + strategy_name);
             usage();
             return;
         }
 
-        if (tries == 1)
+        Frame f = new Frame("PGMS");
+        f.addWindowListener(new WindowAdapter()
         {
-            Frame f = new Frame("PGMS");
-            f.addWindowListener(new WindowAdapter()
+            public void windowClosing(WindowEvent e)
             {
-                public void windowClosing(WindowEvent e)
-                {
-                    System.exit(0);
-                }
-            });
+                System.exit(0);
+            }
+        });
 
-            PGMS p = new PGMS(s, mines, rows, columns);
+        PGMS p = new PGMS(s, mines, rows, columns);
 
-            MenuBar mb = new MenuBar();
-            f.setMenuBar(mb);
-            Menu m = new Menu("File");
-            mb.add(m);
-            MenuItem mi = new MenuItem("Exit", new MenuShortcut(KeyEvent.VK_X));
-            mi.addActionListener(new ActionListener()
-            {
-                public void actionPerformed(ActionEvent e)
-                {
-                    System.exit(0);
-                }
-            });
-            m.add(mi);
-
-            p.init_display(strategy_name);
-
-            f.add(p);
-            f.pack();
-            f.show();
-
-            p.start();
-            return;
-        }
-
-        System.out.print("Playing " + tries + " " + game_name + " games");
-        System.out.println(" using strategy " + strategy_name);
-
-        for (int n = 1; n <= tries; n++)
+        MenuBar mb = new MenuBar();
+        f.setMenuBar(mb);
+        Menu m = new Menu("File");
+        mb.add(m);
+        MenuItem mi = new MenuItem("Exit", new MenuShortcut(KeyEvent.VK_X));
+        mi.addActionListener(new ActionListener()
         {
-            Map m = new MineMap(mines, rows, columns); // Create mine map
-            try
+            public void actionPerformed(ActionEvent e)
             {
-                s.play(m);            // Play game
+                System.exit(0);
             }
-            catch (Exception e)
-            {
-                System.out.println(e.toString());
-            }
-            if (m.won()) wins++;    // Record results
-            if (m.probed()) probed++;
+        });
+        m.add(mi);
 
-            System.out.print(wins
-                    + " wins in "
-                    + n
-                    + " tries -- "
-                    + percent(wins, n));
-            if (probed > 0)
-            {
-                System.out.print("%, with "
-                        + probed
-                        + " standard tries -- "
-                        + percent(wins, probed));
-            }
-            System.out.println("%.");
-        }
+        p.init_display(strategy_name);
+
+        f.add(p);
+        f.pack();
+        f.show();
+
+        p.start();
     }
 
     /**

@@ -75,14 +75,23 @@ public class SweeperAlgo implements Strategy
 
             while (!checkForWin(m))
             {
-                madeChanges = false;
-                probeSafeFrontier(m);
-                findSafeBombs(m);
+                if (m.mines_minus_marks() == 0)
+                {
+                    probeAllUnprobedNodes(m);
+                    break;
+                }
+                else
+                {
+                    madeChanges = false;
+                    probeSafeFrontier(m);
+                    findSafeBombs(m);
 
-                if (!madeChanges)
-                    calculateOptimalNode(m);
+                    if (checkForWin(m))
+                        break;
 
-
+                    if (!madeChanges)
+                        calculateOptimalNode(m);
+                }
             }
         }
         catch (BombException e)
@@ -104,6 +113,7 @@ public class SweeperAlgo implements Strategy
         System.out.println();
     }
 
+
     private boolean checkForWin(Map m)
     {
         for (int i = 0; i < m.rows(); i++)
@@ -116,6 +126,24 @@ public class SweeperAlgo implements Strategy
         }
 
         return true;
+    }
+
+    private void probeAllUnprobedNodes(Map m)
+    {
+        for (int i = 0; i < m.rows(); i++)
+        {
+            for (int j = 0; j < m.columns(); j++)
+            {
+                if (!probed[i][j])
+                {
+                    m.probe(i, j);
+                    probed[i][j] = true;
+                }
+            }
+        }
+
+
+
     }
 
     /**
@@ -431,15 +459,6 @@ public class SweeperAlgo implements Strategy
             LinkedList<Point> calcList = new LinkedList<Point>(nodeList);
             LinkedList<Point> bombChanceCount = new LinkedList<Point>();
 
-            /*
-            for (int k = 0; k < j; k++)
-            {
-                Point tmp = calcList.getFirst();
-                calcList.remove(0);
-                calcList.add(tmp);
-            }
-            */
-
             Collections.shuffle(calcList);
 
             for (Point calcNode: calcList)
@@ -557,7 +576,7 @@ public class SweeperAlgo implements Strategy
         }
 
         int lowestBombCount = 100;
-        Point bestNode = new Point(0, 0, 0);
+        Point bestNode = new Point(-1, -1, 0);
 
         for (Point legitNode: legitBombArrangement)
         {
@@ -568,8 +587,16 @@ public class SweeperAlgo implements Strategy
             }
         }
 
-        safeFrontier.add(bestNode);
-        System.out.println("Chose " + bestNode.toString() +  " as best node.");
+        if (bestNode.x == -1 && bestNode.y == -1)
+        {
+            safeFrontier.add(makeRandomProbe(m));
+            System.out.println("Made random guess.");
+        }
+        else
+        {
+            safeFrontier.add(bestNode);
+            System.out.println("Chose " + bestNode.toString() + " as best node.");
+        }
 
         System.out.print("Chance List: ");
 
@@ -686,5 +713,3 @@ public class SweeperAlgo implements Strategy
         return false;
     }
 }
-
-
