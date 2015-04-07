@@ -42,10 +42,10 @@ public class PGMS extends Applet
     // The default strategy
     private static String default_strategy_name = "sweeper.SweeperAlgo";
     Strategy s;            // The selected strategy
-    int mines = 10;        // Beginner game
-    int rows = 8;
-    int columns = 8;
-    DisplayMap m;            // Panel for map display
+    int mines;
+    int rows;
+    int columns;
+    DisplayMap m;          // Panel for map display
 
     /**
      * Application entry point.
@@ -80,6 +80,7 @@ public class PGMS extends Applet
         int tries = 100;
         int wins = 0;
         int probed = 0;
+
 
         Strategy s;
         try
@@ -125,6 +126,7 @@ public class PGMS extends Applet
         f.show();
 
         p.start();
+
     }
 
     /**
